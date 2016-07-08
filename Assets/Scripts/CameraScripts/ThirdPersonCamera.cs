@@ -19,12 +19,24 @@ public class ThirdPersonCamera : MonoBehaviour {
     [SerializeField]
     private Transform followTransform;
 
+    [SerializeField]
+    private float targetingTime = 0.5f;
+
     private Vector3 lookDirection;
     private Vector3 targetPosition;
+    private CameraStates camState = CameraStates.Behind;
 
     private Vector3 velocityCamSmooth = Vector3.zero;
     [SerializeField]
     private float camSmoothDampTime = 0.1f;
+
+    public enum CameraStates
+    {
+        Behind,
+        FirstPerson,
+        Target,
+        Free
+    }
 
 	// Use this for initialization
 	void Start () {
@@ -40,16 +52,41 @@ public class ThirdPersonCamera : MonoBehaviour {
     {
         Vector3 characterOffset = followTransform.position + new Vector3(0f, distanceUp, 0f);
 
-        lookDirection = characterOffset - this.transform.position;
-        lookDirection.y = 0;
-        lookDirection.Normalize();
+        //Find what state the camera is in
+        if(Input.GetAxis("Target") > 0.01f)
+        {
+            camState = CameraStates.Target;
+        }
+        else
+        {
+            camState = CameraStates.Behind;
+        }
 
-        Debug.DrawRay(this.transform.position, lookDirection, Color.green);
+        switch (camState)
+        {
+            case CameraStates.Behind:
+                lookDirection = characterOffset - this.transform.position;
+                lookDirection.y = 0;
+                lookDirection.Normalize();
+
+                Debug.DrawRay(this.transform.position, lookDirection, Color.green);
+                
+                //targetPosition = characterOffset + followTransform.up * distanceUp - lookDirection * distanceAway;
+
+                //Debug.DrawRay(follow.position, Vector3.up * distanceUp, Color.red);
+                //Debug.DrawRay(follow.position, -1f * follow.forward * distanceAway, Color.blue);
+                //Debug.DrawLine(follow.position, targetPosition, Color.magenta);
+                break;
+
+            case CameraStates.Target:
+                lookDirection = followTransform.forward;
+                break;
+        }
+
+
+
+        //Always want to run these in all states
         targetPosition = characterOffset + followTransform.up * distanceUp - lookDirection * distanceAway;
-
-        //Debug.DrawRay(follow.position, Vector3.up * distanceUp, Color.red);
-        //Debug.DrawRay(follow.position, -1f * follow.forward * distanceAway, Color.blue);
-        //Debug.DrawLine(follow.position, targetPosition, Color.magenta);
 
         CompensateForWalls(characterOffset, ref targetPosition);
         SmoothPosition(this.transform.position, targetPosition);
