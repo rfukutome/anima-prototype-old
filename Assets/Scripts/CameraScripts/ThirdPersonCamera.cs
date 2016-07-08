@@ -1,45 +1,34 @@
 ﻿using UnityEngine;
 using System.Collections;
+////////////////////////////////////////////////////////////////
+//   Class:   ThirdPersonCamera
+//   Purpose:    
+//   
+//   Notes:
+//   Contributors: RSF
+////////////////////////////////////////////////////////////////
 
 public class ThirdPersonCamera : MonoBehaviour {
-    [SerializeField]
-    float distanceAway;
-    [SerializeField]
-    float distanceUp;
-    [SerializeField]
-    float smooth;
 
     [SerializeField]
-    Transform followTransform;
-    
-    //height from the top of the character
+    private float distanceAway;
     [SerializeField]
-    private Vector3 offset = new Vector3(0f, 1.5f, 0f);
-
-    private Vector3 velocityCamSmooth = Vector3.zero;
+    private float distanceUp;
     [SerializeField]
-    private float camSmoothDampTime = 0.1f;
+    private float smooth;
     [SerializeField]
-    private float wideScreen = 0.2f;
-    [SerializeField]
-    private float targetingTime = 0.5f;
-
-    public enum CamStates
-    {
-        Behind,
-        FirstPerson,
-        Target,
-        Free
-    }
+    private Transform followTransform;
 
     private Vector3 lookDirection;
     private Vector3 targetPosition;
 
-    private CamStates camState = CamStates.Behind;
-    //private BarsEffect barEffect;
+    private Vector3 velocityCamSmooth = Vector3.zero;
+    [SerializeField]
+    private float camSmoothDampTime = 0.1f;
 
-    void Start () {
-        followTransform = GameObject.FindWithTag("Player").transform;
+	// Use this for initialization
+	void Start () {
+
 	}
 	
 	// Update is called once per frame
@@ -49,45 +38,23 @@ public class ThirdPersonCamera : MonoBehaviour {
 
     void LateUpdate()
     {
-        Vector3 characterOffset = followTransform.position + offset;
+        Vector3 characterOffset = followTransform.position + new Vector3(0f, distanceUp, 0f);
 
-        if (Input.GetAxis("Target") > 0.01f)
-        {
-            camState = CamStates.Target;
-        }
-        else
-        {
-            camState = CamStates.Behind;
-        }
+        lookDirection = characterOffset - this.transform.position;
+        lookDirection.y = 0;
+        lookDirection.Normalize();
 
-        switch (camState)
-        {
-            case CamStates.Behind:
-                lookDirection = characterOffset - this.transform.position;
-                lookDirection.y = 0;
-                lookDirection.Normalize();
-
-                Debug.DrawRay(this.transform.position, lookDirection, Color.green);
-
-                //targetPosition = characterOffset + followTransform.up * distanceUp - lookDirection * distanceAway;
-                //Debug.DrawRay(followTransform.position, Vector3.up * distanceUp, Color.red);
-                //Debug.DrawRay(followTransform.position, -1f * followTransform.forward * distanceAway, Color.blue);
-                Debug.DrawLine(followTransform.position, targetPosition, Color.magenta);
-                break;
-
-            case CamStates.Target:
-                lookDirection = followTransform.forward;
-                
-                break;
-
-        }
-
+        Debug.DrawRay(this.transform.position, lookDirection, Color.green);
         targetPosition = characterOffset + followTransform.up * distanceUp - lookDirection * distanceAway;
+
+        //Debug.DrawRay(follow.position, Vector3.up * distanceUp, Color.red);
+        //Debug.DrawRay(follow.position, -1f * follow.forward * distanceAway, Color.blue);
+        //Debug.DrawLine(follow.position, targetPosition, Color.magenta);
+
         CompensateForWalls(characterOffset, ref targetPosition);
-        //Making a smooth transition from last position to next position
         SmoothPosition(this.transform.position, targetPosition);
 
-        transform.LookAt(characterOffset);
+        transform.LookAt(followTransform);
     }
 
     private void SmoothPosition(Vector3 argFromPosition, Vector3 argToPosition)
@@ -98,10 +65,10 @@ public class ThirdPersonCamera : MonoBehaviour {
     private void CompensateForWalls(Vector3 argFromObject, ref Vector3 argToTarget)
     {
         RaycastHit wallHit = new RaycastHit();
-
         if(Physics.Linecast(argFromObject, argToTarget, out wallHit))
         {
-            argToTarget = new Vector3(wallHit.point.x - .1f, argToTarget.y + .3f, wallHit.point.z - .1f);
+            argToTarget = new Vector3(wallHit.point.x, argToTarget.y, wallHit.point.z);
         }
     }
+
 }
